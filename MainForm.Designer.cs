@@ -28,6 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
+            // يمنع تغيير حجم الفورم
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+
+            // يمنع زر تكبير الفورم
+            this.MaximizeBox = false;
+
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
