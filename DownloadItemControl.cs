@@ -21,6 +21,7 @@ namespace StreamVaultWinForms
         private Label lblStatus;
         private ProgressBar progressBar;
         private Button btnPauseResume;
+        private Button btnCancel;
 
         public DownloadItemControl(string title, MuxedStreamInfo streamInfo, string destinationFolder, YoutubeClient ytClient)
         {
@@ -53,7 +54,7 @@ namespace StreamVaultWinForms
             progressBar = new ProgressBar
             {
                 Location = new System.Drawing.Point(10, 60),
-                Size = new System.Drawing.Size(500, 12)
+                Size = new System.Drawing.Size(470, 12)
             };
 
             btnPauseResume = new Button
@@ -62,19 +63,62 @@ namespace StreamVaultWinForms
                 BackColor = System.Drawing.Color.MediumSlateBlue,
                 ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Location = new System.Drawing.Point(520, 25),
-                Size = new System.Drawing.Size(75, 28)
+                Location = new System.Drawing.Point(490, 25),
+                Size = new System.Drawing.Size(70, 28)
             };
             btnPauseResume.FlatAppearance.BorderSize = 0;
             btnPauseResume.Click += BtnPauseResume_Click;
 
+            // 🔹 زر الإلغاء (X) - أصغر ومكانه مظبوط فوق على اليمين
+            btnCancel = new Button
+            {
+                Text = "X", // رمز غلق أنيق
+                BackColor = System.Drawing.Color.FromArgb(200, 50, 50),
+                ForeColor = System.Drawing.Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new System.Drawing.Font("Segoe UI", 9, System.Drawing.FontStyle.Bold),
+                Size = new System.Drawing.Size(22, 22),
+                Location = new System.Drawing.Point(570, 5),
+                Cursor = Cursors.Hand,
+                TabStop = false
+            };
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.Click += BtnCancel_Click;
+
             BackColor = System.Drawing.Color.FromArgb(45, 45, 65);
-            Size = new System.Drawing.Size(610, 90);
+            Size = new System.Drawing.Size(600, 90);
+            Padding = new Padding(5);
 
             Controls.Add(lblTitle);
             Controls.Add(lblStatus);
             Controls.Add(progressBar);
             Controls.Add(btnPauseResume);
+            Controls.Add(btnCancel);
+        }
+
+
+        private async void BtnCancel_Click(object? sender, EventArgs e)
+        {
+            var result = MessageBox.Show(
+                "Are you sure you want to cancel this download?",
+                "Cancel Download",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                _cts?.Cancel();
+                lblStatus.Text = "Canceled";
+                lblStatus.ForeColor = System.Drawing.Color.OrangeRed;
+                btnPauseResume.Enabled = false;
+                progressBar.Value = 0;
+
+                // تأخير بسيط لإظهار حالة الإلغاء
+                await Task.Delay(500);
+                Parent?.Controls.Remove(this);
+                Dispose();
+            }
         }
 
         private void BtnPauseResume_Click(object? sender, EventArgs e)
@@ -130,8 +174,10 @@ namespace StreamVaultWinForms
                 }
 
                 lblStatus.Text = "Completed!";
+                lblStatus.ForeColor = System.Drawing.Color.LimeGreen;
                 progressBar.Value = 100;
                 btnPauseResume.Enabled = false;
+                btnCancel.Enabled = false;
             }
             catch (OperationCanceledException)
             {

@@ -138,7 +138,7 @@ namespace StreamVaultWinForms
 
             btnAnalyze!.Enabled = false;
 
-            // رسالة انتظار للمستخدم
+            // إنشاء رسالة الانتظار
             var waitingLabel = new Label
             {
                 Text = "Please wait... analyzing video.",
@@ -148,6 +148,9 @@ namespace StreamVaultWinForms
             };
             Controls.Add(waitingLabel);
             waitingLabel.BringToFront();
+
+            // تحديث الواجهة فورًا
+            Application.DoEvents(); // ← دي اللي بتخلي الرسالة تظهر فورًا
 
             try
             {
@@ -165,10 +168,10 @@ namespace StreamVaultWinForms
                     return;
                 }
 
-                // تصميم Panel اختيار الجودة والتحمبل
+                // تصميم Panel لاختيار الجودة
                 var panel = new Panel
                 {
-                    Size = new Size(650, 70), // تم توسيعه
+                    Size = new Size(650, 70),
                     BackColor = Color.FromArgb(45, 45, 65),
                     Margin = new Padding(10, 5, 10, 5)
                 };
@@ -191,7 +194,7 @@ namespace StreamVaultWinForms
                 foreach (var s in muxedStreams)
                     qualityCombo.Items.Add(s.VideoQuality.Label);
 
-                qualityCombo.SelectedIndex = muxedStreams.Count - 1; // أعلى جودة افتراضيًا
+                qualityCombo.SelectedIndex = muxedStreams.Count - 1;
                 panel.Controls.Add(qualityCombo);
 
                 var btnDownload = new Button
@@ -215,7 +218,7 @@ namespace StreamVaultWinForms
                 };
 
                 panel.Controls.Add(btnDownload);
-                flowPanel!.Padding = new Padding(5); // منع تآكل الزرار
+                flowPanel!.Padding = new Padding(5);
                 flowPanel!.Controls.Add(panel);
             }
             catch (Exception ex)
@@ -225,9 +228,10 @@ namespace StreamVaultWinForms
             finally
             {
                 btnAnalyze.Enabled = true;
-                Controls.Remove(waitingLabel); // إزالة رسالة الانتظار بعد الانتهاء
+                Controls.Remove(waitingLabel); // إزالة رسالة الانتظار
             }
         }
+
 
     }
 
