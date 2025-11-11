@@ -138,12 +138,12 @@ namespace StreamVaultWinForms
 
             btnAnalyze!.Enabled = false;
 
-            // نضيف رسالة انتظار فور الضغط على الزر
+            // رسالة انتظار للمستخدم
             var waitingLabel = new Label
             {
                 Text = "Please wait... analyzing video.",
                 ForeColor = Color.Yellow,
-                Location = new Point(14, 550), // ضعها أسفل الفورم أو حسب تصميمك
+                Location = new Point(14, 550),
                 AutoSize = true
             };
             Controls.Add(waitingLabel);
@@ -151,6 +151,7 @@ namespace StreamVaultWinForms
 
             try
             {
+                // تحليل الفيديو
                 var video = await ytClient.Videos.GetAsync(url);
                 var streamManifest = await ytClient.Videos.Streams.GetManifestAsync(video.Id);
                 var muxedStreams = streamManifest.GetMuxedStreams()
@@ -164,11 +165,12 @@ namespace StreamVaultWinForms
                     return;
                 }
 
-                // نعرض ComboBox للجودة وزر التحميل
+                // تصميم Panel اختيار الجودة والتحمبل
                 var panel = new Panel
                 {
-                    Size = new Size(600, 60),
-                    BackColor = Color.FromArgb(45, 45, 65)
+                    Size = new Size(650, 70), // تم توسيعه
+                    BackColor = Color.FromArgb(45, 45, 65),
+                    Margin = new Padding(10, 5, 10, 5)
                 };
 
                 var lblTitle = new Label
@@ -183,35 +185,37 @@ namespace StreamVaultWinForms
                 var qualityCombo = new ComboBox
                 {
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    Location = new Point(10, 30),
-                    Width = 100
+                    Location = new Point(10, 35),
+                    Width = 120
                 };
                 foreach (var s in muxedStreams)
                     qualityCombo.Items.Add(s.VideoQuality.Label);
 
-                qualityCombo.SelectedIndex = muxedStreams.Count - 1; // أعلى جودة افتراضياً
+                qualityCombo.SelectedIndex = muxedStreams.Count - 1; // أعلى جودة افتراضيًا
                 panel.Controls.Add(qualityCombo);
 
                 var btnDownload = new Button
                 {
                     Text = "Download",
-                    Location = new Point(120, 30),
-                    Size = new Size(75, 28),
+                    Location = new Point(150, 33),
+                    Size = new Size(100, 30),
                     BackColor = Color.MediumSlateBlue,
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat
                 };
                 btnDownload.FlatAppearance.BorderSize = 0;
+
                 btnDownload.Click += async (_, __) =>
                 {
                     var selectedStream = muxedStreams[qualityCombo.SelectedIndex];
                     var item = new DownloadItemControl(video.Title, selectedStream, destinationFolder, ytClient);
                     flowPanel!.Controls.Add(item);
                     await item.StartAsync();
-                    panel.Dispose(); // نشيل لوحة الاختيار بعد بدء التحميل
+                    panel.Dispose(); // إزالة لوحة الاختيار بعد بدء التحميل
                 };
-                panel.Controls.Add(btnDownload);
 
+                panel.Controls.Add(btnDownload);
+                flowPanel!.Padding = new Padding(5); // منع تآكل الزرار
                 flowPanel!.Controls.Add(panel);
             }
             catch (Exception ex)
@@ -221,10 +225,9 @@ namespace StreamVaultWinForms
             finally
             {
                 btnAnalyze.Enabled = true;
-                Controls.Remove(waitingLabel); // نشيل رسالة الانتظار بعد انتهاء التحليل
+                Controls.Remove(waitingLabel); // إزالة رسالة الانتظار بعد الانتهاء
             }
         }
-
 
     }
 
