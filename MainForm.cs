@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using YoutubeExplode;
@@ -20,6 +19,7 @@ namespace StreamVaultWinForms
         private FolderBrowserDialog? folderBrowser;
         private string destinationFolder = string.Empty;
         private readonly YoutubeClient ytClient = new YoutubeClient();
+        private MenuStrip menu;
 
         public MainForm()
         {
@@ -41,13 +41,19 @@ namespace StreamVaultWinForms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(26, 24, 36);
 
+            // MENU
+            menu = CreateMenu();
+            Controls.Add(menu);
+
+            int topOffset = menu.Height + 10;
+
             var header = new Label
             {
                 Text = "StreamVault",
                 Font = new Font("Segoe UI", 16, FontStyle.Bold),
                 ForeColor = Color.FromArgb(185, 180, 255),
                 AutoSize = true,
-                Location = new Point(14, 10)
+                Location = new Point(14, topOffset)
             };
             Controls.Add(header);
 
@@ -56,14 +62,14 @@ namespace StreamVaultWinForms
                 PlaceholderText = "Paste video or playlist URL here...",
                 Font = new Font("Segoe UI", 10),
                 Width = 700,
-                Location = new Point(14, 50)
+                Location = new Point(14, topOffset + 40)
             };
             Controls.Add(txtUrl);
 
             btnAnalyze = new Button
             {
                 Text = "Paste & Analyze",
-                Location = new Point(730, 48),
+                Location = new Point(730, topOffset + 38),
                 Width = 200,
                 Height = 30,
                 BackColor = Color.FromArgb(96, 75, 255),
@@ -78,7 +84,7 @@ namespace StreamVaultWinForms
             {
                 Text = "Choose Folder",
                 ForeColor = Color.White,
-                Location = new Point(14, 90),
+                Location = new Point(14, topOffset + 80),
                 Width = 140,
                 Height = 28
             };
@@ -90,7 +96,7 @@ namespace StreamVaultWinForms
                 Text = "Destination Folder: ",
                 BackColor = Color.White,
                 ForeColor = Color.Black,
-                Location = new Point(170, 95),
+                Location = new Point(170, topOffset + 85),
                 AutoSize = true
             };
             Controls.Add(lblDestination);
@@ -100,22 +106,76 @@ namespace StreamVaultWinForms
                 Text = "Download Activity Queue",
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(14, 130),
+                Location = new Point(14, topOffset + 125),
                 AutoSize = true
             };
             Controls.Add(queueLabel);
 
             flowPanel = new FlowLayoutPanel
             {
-                Location = new Point(14, 160),
+                Location = new Point(14, topOffset + 155),
                 Size = new Size(940, 380),
                 AutoScroll = true,
                 FlowDirection = FlowDirection.TopDown,
-                WrapContents = false
+                WrapContents = false,
+                Padding = new Padding(5)
             };
             Controls.Add(flowPanel);
 
             folderBrowser = new FolderBrowserDialog();
+        }
+
+        private MenuStrip CreateMenu()
+        {
+            var menu = new MenuStrip()
+            {
+                Dock = DockStyle.Top,
+                BackColor = Color.FromArgb(40, 40, 55),
+                ForeColor = Color.White,
+                Renderer = new UIHelper.CustomMenuRenderer()
+            };
+
+            var mFile = new ToolStripMenuItem("File");
+            mFile.DropDownItems.Add("New Download");
+            mFile.DropDownItems.Add("Open Download Folder");
+            mFile.DropDownItems.Add("Import URL List");
+            mFile.DropDownItems.Add("Export URLs as Text");
+            mFile.DropDownItems.Add(new ToolStripSeparator());
+            mFile.DropDownItems.Add("Exit");
+
+            var mDownloads = new ToolStripMenuItem("Downloads");
+            mDownloads.DropDownItems.Add("Start Download");
+            mDownloads.DropDownItems.Add("Pause / Resume");
+            mDownloads.DropDownItems.Add("Cancel Download");
+            mDownloads.DropDownItems.Add("Clear Completed");
+            mDownloads.DropDownItems.Add("Clear Failed");
+            mDownloads.DropDownItems.Add("Download Queue Management (View Queue)");
+
+            var mVideoOptions = new ToolStripMenuItem("Video Options");
+            mVideoOptions.DropDownItems.Add("Select Video Quality");
+            mVideoOptions.DropDownItems.Add("Download Audio Only");
+            mVideoOptions.DropDownItems.Add("Convert to MP3");
+            mVideoOptions.DropDownItems.Add("Convert to MP4");
+
+            var mTools = new ToolStripMenuItem("Tools");
+            mTools.DropDownItems.Add("Bulk Downloader");
+            mTools.DropDownItems.Add("Playlist Downloader");
+
+            var mSettings = new ToolStripMenuItem("Settings");
+            mSettings.DropDownItems.Add("Download Path");
+            mSettings.DropDownItems.Add("Dark / Light Mode");
+
+            var mHelp = new ToolStripMenuItem("Help");
+            mHelp.DropDownItems.Add("Documentation");
+            mHelp.DropDownItems.Add("Shortcuts");
+            mHelp.DropDownItems.Add("About");
+
+            menu.Items.AddRange(new ToolStripItem[]
+            {
+                mFile, mDownloads, mVideoOptions, mTools, mSettings, mHelp
+            });
+
+            return menu;
         }
 
         private void ChooseFolderBtn_Click(object? sender, EventArgs e)
@@ -132,13 +192,13 @@ namespace StreamVaultWinForms
             var url = txtUrl!.Text?.Trim();
             if (string.IsNullOrEmpty(url))
             {
-                MessageBox.Show("Please paste a YouTube video URL.", "No URL", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please paste a YouTube video URL.", "No URL",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            btnAnalyze!.Enabled = false;
+            btnAnalyze.Enabled = false;
 
-            // إنشاء رسالة الانتظار
             var waitingLabel = new Label
             {
                 Text = "Please wait... analyzing video.",
@@ -148,27 +208,34 @@ namespace StreamVaultWinForms
             };
             Controls.Add(waitingLabel);
             waitingLabel.BringToFront();
-
-            // تحديث الواجهة فورًا
-            Application.DoEvents(); // ← دي اللي بتخلي الرسالة تظهر فورًا
+            Application.DoEvents();
 
             try
             {
-                // تحليل الفيديو
                 var video = await ytClient.Videos.GetAsync(url);
                 var streamManifest = await ytClient.Videos.Streams.GetManifestAsync(video.Id);
                 var muxedStreams = streamManifest.GetMuxedStreams()
-                                                 .Where(s => s.VideoQuality.Label != null)
-                                                 .OrderBy(s => s.VideoQuality.MaxHeight)
-                                                 .ToList();
+                    .OrderBy(s => s.VideoQuality.MaxHeight)
+                    .ToList();
 
                 if (!muxedStreams.Any())
                 {
-                    MessageBox.Show("No downloadable streams found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("No downloadable streams found.");
                     return;
                 }
 
-                // تصميم Panel لاختيار الجودة
+                // تحقق إذا الفيديو موجود بالفعل
+                var existingItem = flowPanel!.Controls
+                    .OfType<DownloadItemControl>()
+                    .FirstOrDefault(x => x.Title == video.Title);
+
+                if (existingItem != null)
+                {
+                    MessageBox.Show("This video is already in the download queue.", "Info",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
                 var panel = new Panel
                 {
                     Size = new Size(650, 70),
@@ -210,179 +277,45 @@ namespace StreamVaultWinForms
 
                 btnDownload.Click += async (_, __) =>
                 {
-                    var selectedStream = muxedStreams[qualityCombo.SelectedIndex];
-                    var item = new DownloadItemControl(video.Title, selectedStream, destinationFolder, ytClient);
-                    flowPanel!.Controls.Add(item);
+                    var selected = muxedStreams[qualityCombo.SelectedIndex];
+
+                    var item = new DownloadItemControl(video.Title, selected,
+                        destinationFolder, ytClient);
+
+                    item.Size = new Size(600, 0); // start collapsed
+                    flowPanel.Controls.Add(item);
+
+                    AnimateItem(item); // animation
+
                     await item.StartAsync();
-                    panel.Dispose(); // إزالة لوحة الاختيار بعد بدء التحميل
+                    panel.Visible = false;
+                    panel.Dispose();
                 };
 
                 panel.Controls.Add(btnDownload);
-                flowPanel!.Padding = new Padding(5);
                 flowPanel!.Controls.Add(panel);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to analyze URL:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error analyzing video:\n{ex.Message}");
             }
             finally
             {
                 btnAnalyze.Enabled = true;
-                Controls.Remove(waitingLabel); // إزالة رسالة الانتظار
+                Controls.Remove(waitingLabel);
             }
         }
 
-
-    }
-
-    public partial class DownloadItemControlWithQuality : UserControl
-    {
-        private readonly string _title;
-        private readonly List<MuxedStreamInfo> _streams;
-        private readonly string _destinationFolder;
-        private readonly YoutubeClient _ytClient;
-        private readonly ComboBox _qualityCombo;
-        private CancellationTokenSource? _cts;
-        private bool _isPaused = false;
-
-        private Label lblTitle;
-        private Label lblStatus;
-        private ProgressBar progressBar;
-        private Button btnPauseResume;
-
-        public DownloadItemControlWithQuality(string title, List<MuxedStreamInfo> streams, string destinationFolder, YoutubeClient ytClient, ComboBox qualityCombo)
+        // Animation
+        private async void AnimateItem(Control ctrl)
         {
-            _title = title;
-            _streams = streams;
-            _destinationFolder = destinationFolder;
-            _ytClient = ytClient;
-            _qualityCombo = qualityCombo;
-            BuildUI();
-        }
-
-        private void BuildUI()
-        {
-            lblTitle = new Label
+            int h = 0;
+            while (h < 90)
             {
-                Text = _title.Length > 60 ? _title.Substring(0, 57) + "..." : _title,
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                AutoSize = true,
-                Location = new Point(10, 10)
-            };
-
-            lblStatus = new Label
-            {
-                Text = "Queued...",
-                ForeColor = Color.Silver,
-                AutoSize = true,
-                Location = new Point(10, 35)
-            };
-
-            progressBar = new ProgressBar
-            {
-                Location = new Point(10, 60),
-                Size = new Size(500, 12)
-            };
-
-            btnPauseResume = new Button
-            {
-                Text = "Pause",
-                BackColor = Color.MediumSlateBlue,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Location = new Point(520, 25),
-                Size = new Size(75, 28)
-            };
-            btnPauseResume.FlatAppearance.BorderSize = 0;
-            btnPauseResume.Click += BtnPauseResume_Click;
-
-            _qualityCombo.Location = new Point(520, 55);
-
-            BackColor = Color.FromArgb(45, 45, 65);
-            Size = new Size(610, 90);
-
-            Controls.Add(lblTitle);
-            Controls.Add(lblStatus);
-            Controls.Add(progressBar);
-            Controls.Add(btnPauseResume);
-            Controls.Add(_qualityCombo);
-
-            _ = StartAsync(); // نبدأ التحميل مباشرة بعد إضافته
-        }
-
-        private void BtnPauseResume_Click(object? sender, EventArgs e)
-        {
-            if (_isPaused)
-            {
-                _isPaused = false;
-                lblStatus.Text = "Resuming...";
-                btnPauseResume.Text = "Pause";
-                _cts = new CancellationTokenSource();
-                _ = StartAsync();
+                h += 5;
+                ctrl.Size = new Size(600, h);
+                await Task.Delay(5);
             }
-            else
-            {
-                _isPaused = true;
-                _cts?.Cancel();
-                lblStatus.Text = "Paused";
-                btnPauseResume.Text = "Resume";
-            }
-        }
-
-        public async Task StartAsync()
-        {
-            try
-            {
-                lblStatus.Text = "Downloading...";
-                _cts = new CancellationTokenSource();
-
-                var selectedStream = _streams[_qualityCombo.SelectedIndex];
-                string fileName = GetSafeFilename($"{_title}.mp4");
-                string outputPath = Path.Combine(_destinationFolder, fileName);
-
-                await using var stream = await _ytClient.Videos.Streams.GetAsync(selectedStream);
-                await using var file = File.Create(outputPath);
-
-                byte[] buffer = new byte[16 * 1024];
-                long totalBytes = (long)selectedStream.Size.Bytes;
-                long received = 0;
-
-                while (true)
-                {
-                    int bytes = await stream.ReadAsync(buffer, 0, buffer.Length, _cts.Token);
-                    if (bytes == 0)
-                        break;
-
-                    await file.WriteAsync(buffer, 0, bytes, _cts.Token);
-                    received += bytes;
-                    double progress = (double)received / totalBytes * 100;
-                    progressBar.Value = Math.Min(100, (int)progress);
-                    lblStatus.Text = $"Downloading... {progressBar.Value}%";
-
-                    if (_isPaused)
-                        return;
-                }
-
-                lblStatus.Text = "Completed!";
-                progressBar.Value = 100;
-                btnPauseResume.Enabled = false;
-            }
-            catch (OperationCanceledException)
-            {
-                lblStatus.Text = "Paused";
-            }
-            catch (Exception ex)
-            {
-                lblStatus.Text = "Error: " + ex.Message;
-            }
-        }
-
-        private static string GetSafeFilename(string name)
-        {
-            foreach (char c in Path.GetInvalidFileNameChars())
-                name = name.Replace(c, '_');
-            return name;
         }
     }
 }

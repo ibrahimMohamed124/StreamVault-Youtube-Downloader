@@ -14,6 +14,7 @@ namespace StreamVaultWinForms
         private readonly MuxedStreamInfo _streamInfo;
         private readonly string _destinationFolder;
         private readonly YoutubeClient _ytClient;
+
         private CancellationTokenSource? _cts;
         private bool _isPaused = false;
 
@@ -23,12 +24,15 @@ namespace StreamVaultWinForms
         private Button btnPauseResume;
         private Button btnCancel;
 
+        public string Title => _title; // Property للوصول للعنوان من MainForm
+
         public DownloadItemControl(string title, MuxedStreamInfo streamInfo, string destinationFolder, YoutubeClient ytClient)
         {
             _title = title;
             _streamInfo = streamInfo;
             _destinationFolder = destinationFolder;
             _ytClient = ytClient;
+
             BuildUI();
         }
 
@@ -69,10 +73,9 @@ namespace StreamVaultWinForms
             btnPauseResume.FlatAppearance.BorderSize = 0;
             btnPauseResume.Click += BtnPauseResume_Click;
 
-            // 🔹 زر الإلغاء (X) - أصغر ومكانه مظبوط فوق على اليمين
             btnCancel = new Button
             {
-                Text = "X", // رمز غلق أنيق
+                Text = "X",
                 BackColor = System.Drawing.Color.FromArgb(200, 50, 50),
                 ForeColor = System.Drawing.Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -96,28 +99,38 @@ namespace StreamVaultWinForms
             Controls.Add(btnCancel);
         }
 
-
         private async void BtnCancel_Click(object? sender, EventArgs e)
         {
             var result = MessageBox.Show(
                 "Are you sure you want to cancel this download?",
                 "Cancel Download",
                 MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
+                MessageBoxIcon.Warning
             );
 
-            if (result == DialogResult.Yes)
+            if (result != DialogResult.Yes)
+                return;
+
+            try
             {
                 _cts?.Cancel();
+
                 lblStatus.Text = "Canceled";
                 lblStatus.ForeColor = System.Drawing.Color.OrangeRed;
                 btnPauseResume.Enabled = false;
+                btnCancel.Enabled = false;
                 progressBar.Value = 0;
 
-                // تأخير بسيط لإظهار حالة الإلغاء
-                await Task.Delay(500);
-                Parent?.Controls.Remove(this);
+                await Task.Delay(400);
+
+                if (Parent != null && !Parent.IsDisposed)
+                    Parent.Controls.Remove(this);
+
                 Dispose();
+            }
+            catch
+            {
+                // تجاهل أي خطأ أثناء الإزالة
             }
         }
 
@@ -165,6 +178,7 @@ namespace StreamVaultWinForms
 
                     await file.WriteAsync(buffer, 0, bytes, _cts.Token);
                     received += bytes;
+
                     double progress = (double)received / totalBytes * 100;
                     progressBar.Value = Math.Min(100, (int)progress);
                     lblStatus.Text = $"Downloading... {progressBar.Value}%";
